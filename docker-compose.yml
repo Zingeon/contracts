@@ -1,0 +1,36 @@
+version: '3'
+
+services:
+  rabbitmq:
+    image: 'rabbitmq:3-management'
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+
+  mongodb:
+    image: 'mongo:latest'
+    ports:
+      - '27017:27017'
+
+  publisher:
+    build:
+      context: .
+      dockerfile: docker/publisher/Dockerfile
+    volumes:
+      - ./queue:/app
+#
+#  worker:
+#    build:
+#      context: .
+#      dockerfile: docker/worker/Dockerfile
+#    volumes:
+#      - ./queue:/app
+
+  php:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    ports:
+      - '8000:8000'
+    volumes:
+      - ./api:/app
