@@ -16,15 +16,22 @@ services:
     build:
       context: .
       dockerfile: docker/publisher/Dockerfile
+    command: sh -c '/bin/wait-for-it.sh rabbitmq:5672 --timeout=30 -- npm run start-publisher'
+    depends_on:
+    - rabbitmq
+    - mongodb
     volumes:
       - ./queue:/app
-#
-#  worker:
-#    build:
-#      context: .
-#      dockerfile: docker/worker/Dockerfile
-#    volumes:
-#      - ./queue:/app
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/worker/Dockerfile
+    command: sh -c '/bin/wait-for-it.sh rabbitmq:5672 --timeout=30 -- npm run start-worker'
+    depends_on:
+    - publisher
+    volumes:
+      - ./queue:/app
 
   php:
     build:
