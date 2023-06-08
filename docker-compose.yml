@@ -19,7 +19,6 @@ services:
     command: sh -c '/bin/wait-for-it.sh rabbitmq:5672 --timeout=30 -- npm run start-publisher'
     depends_on:
     - rabbitmq
-    - mongodb
     volumes:
       - ./queue:/app
 
@@ -29,7 +28,8 @@ services:
       dockerfile: docker/worker/Dockerfile
     command: sh -c '/bin/wait-for-it.sh rabbitmq:5672 --timeout=30 -- npm run start-worker'
     depends_on:
-    - publisher
+    - rabbitmq
+    - mongodb
     volumes:
       - ./queue:/app
 
@@ -39,5 +39,7 @@ services:
       dockerfile: docker/api/Dockerfile
     ports:
       - '8000:8000'
+    depends_on:
+      - mongodb
     volumes:
       - ./api:/app

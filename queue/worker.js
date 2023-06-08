@@ -6,52 +6,47 @@ const url = 'mongodb://mongodb:27017';
 const mongoClient = new MongoClient(url);
 const dbName = 'iotex';
 
-
-let isConsuming = true;
-
 (async () => {
-    const connection = await amqplib.connect('amqp://rabbitmq');
-    const channel = await connection.createChannel();
-    const queue = 'block_number';
-    console.log('Starting worker...')
-    await channel.assertQueue(queue);
-    while (isConsuming) {
-        if (!isConsuming) {
-            break;
-        }
-        const message = await channel.get(queue);
+    try {
+        // const connection = await amqplib.connect('amqp://rabbitmq');
+        const connection = await amqplib.connect('amqp://guest:guest@127.0.0.1:5672');
+        const channel = await connection.createChannel();
+        channel.prefetch(1);
+        const queue = 'block_numbers';
+        console.log('Starting worker...')
+        await channel.assertQueue(queue);
 
-        if (message === false) {
-            break;
-        }
-
-        await web3.eth.getBlock(message.content.toString(), true).then(async (response) => {
-            console.log('Recieved block number:', message.content.toString());
-
-            try {
-                await mongoClient.connect();
-        
-                const db = mongoClient.db(dbName);
-                console.log('Connected to the MongoDB server');
-                const collection = db.collection('transactions');
-                if(response.transactions.length > 0) {
-                    response.transactions.forEach(transaction => {
-                        collection.insertOne({
-                            'transactionFrom': transaction.from, 
-                            'transactionTo': transaction.to
-                        }, function(err, res) {
-                            if (err) throw err;
-                            console.log("1 document inserted");
-                            db.close();
-                          });
-                    });
+        channel.consume(
+            queue,
+            async (message) => {
+                console.log(`Received message: ${message.content.toString()}`);
+                const response = await web3.eth.getBlock(message.content.toString(), true);
+                console.log('Recieved block number:', message.content.toString());
+                try {
+                    await mongoClient.connect();
+                    const db = mongoClient.db(dbName);
+                    console.log('Connected to the MongoDB server');
+                    const collection = db.collection('transactions');
+                    if(response.transactions.length > 0) {
+                        response.transactions.forEach(transaction => {
+                            collection.insertOne({
+                                'transactionFrom': transaction.from, 
+                                'transactionTo': transaction.to
+                            }, function(insertionError, res) {
+                                if (insertionError) {
+                                    throw insertionError;
+                                }
+                                console.log("1 document inserted");
+                                db.close();
+                              });
+                        });
+                    }
+                    channel.ack(message);
+                } catch (databaseError) {
+                    console.error('Error connecting to the database:', databaseError);
                 }
-
-                channel.ack(message);
-              } catch (error) {
-                console.error('Error creating the database:', error);
-              }
-        }
-        );
+            })
+    } catch (queueError) {
+        console.error('Error connecting to the message broker:', queueError);
     }
 })();
