@@ -6,7 +6,6 @@ const blockEndNumber = 23226158;
 (async () => {
     try {
         const connection = await amqplib.connect('amqp://rabbitmq');
-
         const channel = await connection.createChannel();
         const queue = 'block_numbers';
         await channel.assertQueue(queue);
@@ -24,5 +23,4 @@ const blockEndNumber = 23226158;
     } catch (queueError) {
         console.error('Error connecting to the message broker:', queueError);
     }
-
 })();

@@ -16,7 +16,7 @@ To get started with the project, follow these steps:
 1. Clone the repository:
 
    ```shell
-   git clone https://github.com/Zingeon/contracts .
+   git clone https://github.com/Zingeon/contracts
 
 2. Navigate to the directory:
 
@@ -27,7 +27,6 @@ To get started with the project, follow these steps:
 
    ```shell
    docker-compose up --build
-
 
 ## Using
 
