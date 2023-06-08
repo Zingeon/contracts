@@ -1,18 +1,20 @@
 const amqplib = require('amqplib');
 
-const blockStartNumber = 23224028;
-const blockEndNumber = 23226158;
+const queueHost = process.env.QUEUE_HOST;
+const queueName = process.env.QUEUE_NAME;
+const blockStartNumber = process.env.BLOCK_START_NUMBER;
+const blockEndNumber = process.env.BLOCK_END_NUMBER;
 
 (async () => {
     try {
-        const connection = await amqplib.connect('amqp://rabbitmq');
+        const connection = await amqplib.connect(queueHost);
         const channel = await connection.createChannel();
-        const queue = 'block_numbers';
-        await channel.assertQueue(queue);
+        
+        await channel.assertQueue(queueName);
         console.log('Starting publisher...')
         for (let currentBlockNumber = blockStartNumber; currentBlockNumber <= blockEndNumber; currentBlockNumber++) {
             const message = currentBlockNumber.toString();
-            channel.sendToQueue(queue, Buffer.from(message));
+            channel.sendToQueue(queueName, Buffer.from(message));
             console.log(" [x] Sent %s", message);
         }
 

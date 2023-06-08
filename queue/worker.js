@@ -1,38 +1,36 @@
 const amqplib = require('amqplib');
 const Web3 = require('web3');
 const { MongoClient } = require('mongodb');
-const url = 'mongodb://mongodb';
-const mongoClient = new MongoClient(url);
-const dbName = 'iotex';
-const web3ApiEndpoints = [
-    "https://sbabel-api.mainnet.iotex.io",
+const mongoClient = new MongoClient(process.env.DB_HOST);
+const dbName = process.env.DB_NAME;
+const queueHost = process.env.QUEUE_HOST;
+const queueName = process.env.QUEUE_NAME;
+
+const web3ApiProviders = [
+    "https://babel-api.mainnet.iotex.io",
     "https://babel-api.mainnet.iotex.one",
     "https://iotexrpc.com",
     "https://rpc.ankr.com/iotex",
     "https://iotex-rpc.gateway.pokt.network"
 ];
-
-let urlIndex = 0;
+let providerIndex = 0;
+const web3 = new Web3(web3ApiProviders[providerIndex]);
 
 function getNextProvider() {
-    const url = web3ApiEndpoints[urlIndex];
-    urlIndex = (urlIndex + 1) % web3ApiEndpoints.length;
-
-    return new Web3(url);
+    providerIndex = (providerIndex + 1) % web3ApiProviders.length;
+    const provider = web3ApiProviders[providerIndex];
+    return web3.setProvider(provider);
 }
 
-let web3 = getNextProvider();
 let changeProvider = false;
 
 (async () => {
     try {
-        const connection = await amqplib.connect('amqp://rabbitmq');
-
+        const connection = await amqplib.connect(queueHost);
         const channel = await connection.createChannel();
         channel.prefetch(1);
-        const queue = 'block_numbers';
         console.log('Starting worker...')
-        await channel.assertQueue(queue);
+        await channel.assertQueue(queueName);
 
         try {
             await mongoClient.connect();
@@ -45,12 +43,12 @@ let changeProvider = false;
         const collection = db.collection('transactions');
 
         channel.consume(
-            queue,
+            queueName,
             async (message) => {
                 try {
                     if (changeProvider) {
+                        getNextProvider();
                         console.log('Provider changed...')
-                        web3 = getNextProvider();
                     }
                     const response = await web3.eth.getBlock(message.content.toString(), true);
                     console.log('Recieved block number:', message.content.toString());

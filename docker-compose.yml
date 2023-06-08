@@ -27,6 +27,11 @@ services:
     volumes:
       - "./queue:/app"
       - "node_modules:/app/node_modules"
+    environment:
+      - QUEUE_HOST=amqp://rabbitmq
+      - QUEUE_NAME=block_numbers
+      - BLOCK_START_NUMBER=23224028
+      - BLOCK_END_NUMBER=23226158
 
   worker:
     build:
@@ -39,6 +44,11 @@ services:
     volumes:
       - "./queue:/app"
       - "node_modules:/app/node_modules"
+    environment:
+      - QUEUE_HOST=amqp://rabbitmq
+      - QUEUE_NAME=block_numbers
+      - DB_HOST=mongodb://mongodb
+      - DB_NAME=iotex
 
   php:
     build:
