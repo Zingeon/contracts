@@ -8,8 +8,7 @@ const dbName = 'iotex';
 
 (async () => {
     try {
-        // const connection = await amqplib.connect('amqp://rabbitmq');
-        const connection = await amqplib.connect('amqp://guest:guest@127.0.0.1:5672');
+        const connection = await amqplib.connect('amqp://rabbitmq');
         const channel = await connection.createChannel();
         channel.prefetch(1);
         const queue = 'block_numbers';
